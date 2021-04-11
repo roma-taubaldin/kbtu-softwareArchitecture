@@ -1,0 +1,81 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: task1
+  labels:
+    app: crmw
+    io.kompose.service: task1
+  name: task1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: crmw
+  template:
+    metadata:
+      labels:
+        app: crmw
+        io.kompose.service: task1
+    spec:
+      containers:
+        - name: task1
+          image: dirol13/kbtu-sa:v1
+          env:
+            - name: LOG_LEVEL
+              value: info
+            - name: TZ
+              value: Asia/Almaty
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "150Mi"
+            limits:
+              memory: "200Mi"
+          #        volumeMounts:
+          #        - mountPath: /cert/ca.jks
+          #          subPath: ca.jks
+          #          name: certs
+          #          readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 9
+            periodSeconds: 10
+            failureThreshold: 3
+      terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+        - name: docker-test
+      restartPolicy: Always
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+      maxSurge: 50%
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: task1
+  name: task1-service
+  namespace: task1
+spec:
+  ports:
+    - name: "8000"
+      port: 8000
+      targetPort: 8000
+  selector:
+    io.kompose.service: task1
+  type: ClusterIP
+status:
+  loadBalancer: {}
