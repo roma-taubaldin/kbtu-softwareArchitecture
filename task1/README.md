@@ -1,4 +1,4 @@
-# kbtu-softwareArchitecture
+# kbtu-softwareArchitecture.Task1
 
 to build task1 you need:
 1. pull this project to your pc
