@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: task1-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /health
+  namespace: task1
+spec:
+  rules:
+    - host: sa.homework
+      http:
+        paths:
+          - path: /healthpath
+            pathType: Prefix
+            backend:
+              service:
+                name: task1-service
+                port:
+                  number: 8000
+          - path: /kbtu/ramazan_taubaldin/statusok
+            pathType: Prefix
+            backend:
+              service:
+                name: task1-service
+                port:
+                  number: 8000

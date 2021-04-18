@@ -1,0 +1,79 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: task2
+  labels:
+    io.kompose.service: front
+  name: front
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: front
+  template:
+    metadata:
+      labels:
+        io.kompose.service: front
+    spec:
+      containers:
+        - name: front
+          image: roma-taubaldin/kbtu-sa:v2_frontend
+          env:
+            - name: LOG_LEVEL
+              value: info
+            - name: TZ
+              value: Asia/Almaty
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "150Mi"
+            limits:
+              memory: "200Mi"
+          #        volumeMounts:
+          #        - mountPath: /cert/ca.jks
+          #          subPath: ca.jks
+          #          name: certs
+          #          readOnly: true
+          # livenessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8000
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 10
+          #   failureThreshold: 3
+          # readinessProbe:
+          #   httpGet:
+          #     path: /health
+          #     port: 8000
+          #   initialDelaySeconds: 9
+          #   periodSeconds: 10
+          #   failureThreshold: 3
+      terminationGracePeriodSeconds: 30
+      # imagePullSecrets:
+      #   - name: docker-test
+      restartPolicy: Always
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+      maxSurge: 50%
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    io.kompose.service: front
+  name: front-service
+  namespace: task2
+spec:
+  ports:
+    - name: "8080"
+      port: 8080
+      targetPort: 8080
+  selector:
+    io.kompose.service: front
+  type: ClusterIP
+status:
+  loadBalancer: {}
