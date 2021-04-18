@@ -1,4 +1,4 @@
-FROM SCRATCH
+FROM scratch
 WORKDIR /
 COPY main /main
 COPY zoneinfo.zip /
