@@ -4,23 +4,21 @@ kind: Deployment
 metadata:
   namespace: task1
   labels:
-    app: crmw
     io.kompose.service: task1
   name: task1
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: crmw
+      io.kompose.service: task1
   template:
     metadata:
       labels:
-        app: crmw
         io.kompose.service: task1
     spec:
       containers:
         - name: task1
-          image: dirol13/kbtu-sa:v1
+          image: roma-taubaldin/kbtu-sa:v1_linux
           env:
             - name: LOG_LEVEL
               value: info
