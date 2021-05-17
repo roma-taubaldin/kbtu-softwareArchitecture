@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+First Name: <input type="text" id="myText" value="https://">
+
+
+<button onclick="myFunction()">Send query</button>
+
+
+<script>
+    function myFunction() {
+        var url = document.getElementById("myText").value;
+        var http = new XMLHttpRequest();
+        http.open('POST', url, true);
+
+        http.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+
+        http.onreadystatechange = function () {
+            if (http.status == 200) {
+                alert(http.responseText);
+            } else {
+                alert('error', http.responseText)
+            }
+        }
+        http.send();
+    }
+</script>
+
+</body>
+
+</html>
