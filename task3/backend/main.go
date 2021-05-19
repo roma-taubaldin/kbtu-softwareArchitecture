@@ -169,10 +169,10 @@ func handleCreate() http.HandlerFunc {
 
 func handleView() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		/*tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 		if err != nil {
 			log.Fatal(err)
-		}
+		}*/
 		type Task struct {
 			Id          int       `json:"id" db:"id"`
 			Task        string    `json:"task" db:"task"`
@@ -185,7 +185,6 @@ func handleView() http.HandlerFunc {
 		sqlSelect := `select * from kbtu.tasks`
 		res, err := db.Query(sqlSelect)
 		if err != nil {
-			_ = tx.Rollback()
 			log.Fatal(err)
 		}
 		defer res.Close()
@@ -193,9 +192,6 @@ func handleView() http.HandlerFunc {
 			if err = res.Scan(&tasks); err != nil {
 				log.Fatal(err)
 			}
-		}
-		if err := tx.Commit(); err != nil {
-			log.Fatal(err)
 		}
 		body, err := json.MarshalIndent(tasks, "", "    ")
 		if err != nil {
