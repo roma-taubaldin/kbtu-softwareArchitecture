@@ -19,16 +19,14 @@ spec:
         envFrom:
           - configMapRef:
               name: postgres-config-demo
-        envFrom:
-          - configMapRef:
-              name: postgres-config-demo
         ports:
         - containerPort: 5432
           name: postgredb
         volumeMounts:
-        - name: pv-data
-          mountPath: /var/lib/postgresql/data
+        - mountPath: /var/lib/postgsql/data
+          name: postgres-volume
       volumes:
-      - name: pv-data
-        persistentVolumeClaim:
-          claimName: postgres-pv-claim
+      - name: postgres-volume
+        hostPath:
+          path: /home/roma/data
+          type: Directory

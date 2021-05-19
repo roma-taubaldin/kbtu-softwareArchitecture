@@ -8,6 +8,7 @@ import (
 	_ "github.com/lib/pq"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -25,21 +26,20 @@ var (
 )
 
 func main() {
-	pgdbInfo := fmt.Sprintf("host:=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		dbhost, dbport, dbuser, dbpassword, dbname)
+	pgdbInfo := fmt.Sprintf("host=sa.homework port=%d user=%s password=%s dbname=%s sslmode=disable",
+		dbport, dbuser, dbpassword, dbname)
 	db, err := sql.Open("postgres", pgdbInfo)
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	text, err := fmt.Printf("%s Succesfull connected to DB", time.Now().Format("02.01.2006 15:04:05"))
 	if err != nil {
 		return
 	}
 	fmt.Println(text)
-	defer db.Close()
 	err = db.Ping()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
 	text, err = fmt.Printf("%s Succesfull pinged to DB", time.Now().Format("02.01.2006 15:04:05"))
 	if err != nil {
@@ -57,10 +57,10 @@ func main() {
 	http.HandleFunc("/time", handleTime())
 	http.HandleFunc("/weather", handleWeather())
 	http.HandleFunc("/rates", handleRates())
-	http.HandleFunc("/createTask", handleCreate())
-	http.HandleFunc("/deleteTask", handleDelete())
-	http.HandleFunc("/updateTask", handleUpdate())
-	http.HandleFunc("/viewTasks", handleView())
+	http.HandleFunc("/createTask", handleCreate(*db))
+	http.HandleFunc("/deleteTask", handleDelete(*db))
+	http.HandleFunc("/updateTask", handleUpdate(*db))
+	http.HandleFunc("/viewTasks", handleView(*db))
 
 	http.ListenAndServe(":8000", nil)
 }
@@ -147,27 +147,19 @@ func handleRates() http.HandlerFunc {
 	}
 }
 
-func handleCreate() http.HandlerFunc {
+func handleCreate(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		task := r.URL.Query().Get("task")
-		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+
+		_, err := db.Exec("insert into kbtu.tasks (task) values ($1)", task)
 		if err != nil {
-			log.Fatal(err)
-		}
-		sqlInsert := `insert into kbtu.tasks values ($2,$3)`
-		_, err = db.Exec(sqlInsert, task, time.Now())
-		if err != nil {
-			_ = tx.Rollback()
-			log.Fatal(err)
-		}
-		if err := tx.Commit(); err != nil {
-			log.Fatal(err)
+			log.Printf(err.Error())
 		}
 		fmt.Fprintf(w, "Values inserted")
 	}
 }
 
-func handleView() http.HandlerFunc {
+func handleView(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		/*tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 		if err != nil {
@@ -178,20 +170,20 @@ func handleView() http.HandlerFunc {
 			Task        string    `json:"task" db:"task"`
 			CorrectDate time.Time `json:"correctDate" db:"correct_date"`
 		}
-		type Tasks struct {
-			Task []Task
-		}
-		var tasks []Tasks
-		sqlSelect := `select * from kbtu.tasks`
-		res, err := db.Query(sqlSelect)
+
+		var tasks []Task
+		//sqlSelect := `select * from kbtu.tasks`
+		res, err := db.Query("select id, task, correct_date from kbtu.tasks")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer res.Close()
 		for res.Next() {
-			if err = res.Scan(&tasks); err != nil {
+			var t Task
+			if err = res.Scan(&t.Id, &t.Task, &t.CorrectDate); err != nil {
 				log.Fatal(err)
 			}
+			tasks = append(tasks, t)
 		}
 		body, err := json.MarshalIndent(tasks, "", "    ")
 		if err != nil {
@@ -201,41 +193,25 @@ func handleView() http.HandlerFunc {
 	}
 }
 
-func handleDelete() http.HandlerFunc {
+func handleDelete(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
-		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		_, err := db.Exec("delete from kbtu.tasks where id = $1", id)
 		if err != nil {
-			log.Fatal(err)
-		}
-		sqlDelete := `delete from kbtu.tasks where id = $1`
-		_, err = db.Exec(sqlDelete, id)
-		if err != nil {
-			_ = tx.Rollback()
-			log.Fatal(err)
-		}
-		if err := tx.Commit(); err != nil {
 			log.Fatal(err)
 		}
 		fmt.Fprintf(w, "Values deleted")
 	}
 }
 
-func handleUpdate() http.HandlerFunc {
+func handleUpdate(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.URL.Query().Get("id")
-		task := r.URL.Query().Get("task")
-		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		query := r.URL.Query()
+		id := strings.TrimSpace(query.Get("id"))
+		task := strings.TrimSpace(query.Get("task"))
+		update := fmt.Sprintf("update kbtu.tasks set task = '%s', correct_date = now() where id = %s;", task, id)
+		_, err := db.Exec(update)
 		if err != nil {
-			log.Fatal(err)
-		}
-		sqlUpdate := `update kbtu.tasks set task = $2, correct_date = now() where id = $1`
-		_, err = db.Exec(sqlUpdate, id, task)
-		if err != nil {
-			_ = tx.Rollback()
-			log.Fatal(err)
-		}
-		if err := tx.Commit(); err != nil {
 			log.Fatal(err)
 		}
 		fmt.Fprintf(w, "Values updated")
