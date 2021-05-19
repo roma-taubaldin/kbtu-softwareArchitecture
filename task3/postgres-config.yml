@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config-demo
+  labels:
+    app: postgres
+data: 
+  DATABASE_HOST: sa.homework
+  DATABASE_NAME: demopostgresdb
+  DATABASE_USER: demopostgresadmin
+  DATABASE_PORT: "5432"
+  POSTGRES_PASSWORD: demopostgrespwd
