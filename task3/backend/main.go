@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"time"
@@ -12,10 +13,10 @@ import (
 
 const (
 	dbhost     = "sa.homework"
-	dbport     = "5432"
-	dbuser     = "demopostgresadmin"
-	dbpassword = "demopostgrespwd"
-	dbname     = "demopostgresdb"
+	dbport     = 32715
+	dbuser     = "admin"
+	dbpassword = "admin"
+	dbname     = "db"
 )
 
 var (
@@ -30,13 +31,23 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	text, err := fmt.Printf("%s Succesfull connected to DB", time.Now().Format("02.01.2006 15:04:05"))
+	if err != nil {
+		return
+	}
+	fmt.Println(text)
 	defer db.Close()
 	err = db.Ping()
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("Successfully connected to DB")
-	text, err := fmt.Printf("%s Listening on port :8000", time.Now().Format("02.01.2006 15:04:05"))
+	text, err = fmt.Printf("%s Succesfull pinged to DB", time.Now().Format("02.01.2006 15:04:05"))
+	if err != nil {
+		return
+	}
+	fmt.Println(text)
+
+	text, err = fmt.Printf("%s Listening on port :8000", time.Now().Format("02.01.2006 15:04:05"))
 	if err != nil {
 		return
 	}
@@ -143,7 +154,7 @@ func handleCreate() http.HandlerFunc {
 		if err != nil {
 			log.Fatal(err)
 		}
-		sqlInsert := `insert into tasks values ($2,$3)`
+		sqlInsert := `insert into kbtu.tasks values ($2,$3)`
 		_, err = db.Exec(sqlInsert, task, time.Now())
 		if err != nil {
 			_ = tx.Rollback()
@@ -171,7 +182,7 @@ func handleView() http.HandlerFunc {
 			Task []Task
 		}
 		var tasks []Tasks
-		sqlSelect := `select * from tasks`
+		sqlSelect := `select * from kbtu.tasks`
 		res, err := db.Query(sqlSelect)
 		if err != nil {
 			_ = tx.Rollback()
@@ -201,7 +212,7 @@ func handleDelete() http.HandlerFunc {
 		if err != nil {
 			log.Fatal(err)
 		}
-		sqlDelete := `delete from tasks where id = $1`
+		sqlDelete := `delete from kbtu.tasks where id = $1`
 		_, err = db.Exec(sqlDelete, id)
 		if err != nil {
 			_ = tx.Rollback()
@@ -222,7 +233,7 @@ func handleUpdate() http.HandlerFunc {
 		if err != nil {
 			log.Fatal(err)
 		}
-		sqlUpdate := `update tasks set task = $2, correct_date = now() where id = $1`
+		sqlUpdate := `update kbtu.tasks set task = $2, correct_date = now() where id = $1`
 		_, err = db.Exec(sqlUpdate, id, task)
 		if err != nil {
 			_ = tx.Rollback()
