@@ -12,6 +12,7 @@ import (
 	"github.com/slok/go-http-metrics/middleware/std"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -161,33 +162,25 @@ func handleCreate(db sql.DB) http.HandlerFunc {
 
 func handleView(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-		if err != nil {
-			log.Fatal(err)
-		}
 		type Task struct {
 			Id          int       `json:"id" db:"id"`
 			Task        string    `json:"task" db:"task"`
 			CorrectDate time.Time `json:"correctDate" db:"correct_date"`
 		}
-		type Tasks struct {
-			Task []Task
-		}
-		var tasks []Tasks
-		sqlSelect := `select * from tasks`
-		res, err := db.Query(sqlSelect)
+
+		var tasks []Task
+		//sqlSelect := `select * from kbtu.tasks`
+		res, err := db.Query("select id, task, correct_date from kbtu.tasks")
 		if err != nil {
-			_ = tx.Rollback()
 			log.Fatal(err)
 		}
 		defer res.Close()
 		for res.Next() {
-			if err = res.Scan(&tasks); err != nil {
+			var t Task
+			if err = res.Scan(&t.Id, &t.Task, &t.CorrectDate); err != nil {
 				log.Fatal(err)
 			}
-		}
-		if err := tx.Commit(); err != nil {
-			log.Fatal(err)
+			tasks = append(tasks, t)
 		}
 		body, err := json.MarshalIndent(tasks, "", "    ")
 		if err != nil {
@@ -200,17 +193,8 @@ func handleView(db sql.DB) http.HandlerFunc {
 func handleDelete(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
-		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		_, err := db.Exec("delete from kbtu.tasks where id = $1", id)
 		if err != nil {
-			log.Fatal(err)
-		}
-		sqlDelete := `delete from tasks where id = $1`
-		_, err = db.Exec(sqlDelete, id)
-		if err != nil {
-			_ = tx.Rollback()
-			log.Fatal(err)
-		}
-		if err := tx.Commit(); err != nil {
 			log.Fatal(err)
 		}
 		fmt.Fprintf(w, "Values deleted")
@@ -219,19 +203,12 @@ func handleDelete(db sql.DB) http.HandlerFunc {
 
 func handleUpdate(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id := r.URL.Query().Get("id")
-		task := r.URL.Query().Get("task")
-		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		query := r.URL.Query()
+		id := strings.TrimSpace(query.Get("id"))
+		task := strings.TrimSpace(query.Get("task"))
+		update := fmt.Sprintf("update kbtu.tasks set task = '%s', correct_date = now() where id = %s;", task, id)
+		_, err := db.Exec(update)
 		if err != nil {
-			log.Fatal(err)
-		}
-		sqlUpdate := `update tasks set task = $2, correct_date = now() where id = $1`
-		_, err = db.Exec(sqlUpdate, id, task)
-		if err != nil {
-			_ = tx.Rollback()
-			log.Fatal(err)
-		}
-		if err := tx.Commit(); err != nil {
 			log.Fatal(err)
 		}
 		fmt.Fprintf(w, "Values updated")
