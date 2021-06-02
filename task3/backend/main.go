@@ -51,15 +51,15 @@ func main() {
 		Recorder: metrics.NewRecorder(metrics.Config{}),
 	})
 
-	http.HandleFunc("/health", handleHealth())
+	http.Handle("/health", std.Handler("/health", promHttpMetrics, handleHealth()))
 	http.Handle("/ping", std.Handler("/ping", promHttpMetrics, handlePing()))
-	http.HandleFunc("/time", handleTime())
-	http.HandleFunc("/weather", handleWeather())
-	http.HandleFunc("/rates", handleRates())
-	http.HandleFunc("/createTask", handleCreate(*db))
-	http.HandleFunc("/deleteTask", handleDelete())
-	http.HandleFunc("/updateTask", handleUpdate())
-	http.HandleFunc("/viewTasks", handleView())
+	http.Handle("/time", std.Handler("/time", promHttpMetrics, handleTime()))
+	http.Handle("/weather", std.Handler("/weather", promHttpMetrics, handleWeather()))
+	http.Handle("/rates", std.Handler("/rates", promHttpMetrics, handleRates()))
+	http.Handle("/createTask", std.Handler("/createTask", promHttpMetrics, handleCreate(*db)))
+	http.Handle("/deleteTask", std.Handler("/deleteTask", promHttpMetrics, handleDelete(*db)))
+	http.Handle("/updateTask", std.Handler("/updateTask", promHttpMetrics, handleUpdate(*db)))
+	http.Handle("/viewTasks", std.Handler("/viewTasks", promHttpMetrics, handleView(*db)))
 	http.Handle("/metrics", promhttp.Handler())
 
 	http.ListenAndServe(":8000", nil)
@@ -159,7 +159,7 @@ func handleCreate(db sql.DB) http.HandlerFunc {
 	}
 }
 
-func handleView() http.HandlerFunc {
+func handleView(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 		if err != nil {
@@ -197,7 +197,7 @@ func handleView() http.HandlerFunc {
 	}
 }
 
-func handleDelete() http.HandlerFunc {
+func handleDelete(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 		tx, err := db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
@@ -217,7 +217,7 @@ func handleDelete() http.HandlerFunc {
 	}
 }
 
-func handleUpdate() http.HandlerFunc {
+func handleUpdate(db sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 		task := r.URL.Query().Get("task")
