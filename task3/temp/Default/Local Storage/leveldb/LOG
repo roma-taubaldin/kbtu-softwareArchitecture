@@ -1,0 +1,5 @@
+2021/06/04-21:32:31.917 3 Creating DB /home/roma/kbtu-sa/kbtu-softwareArchitecture/task3/temp/Default/Local Storage/leveldb since it was missing.
+2021/06/04-21:32:31.937 3 Reusing MANIFEST /home/roma/kbtu-sa/kbtu-softwareArchitecture/task3/temp/Default/Local Storage/leveldb/MANIFEST-000001
+2021/06/04-21:33:45.913 5 Level-0 table #5: started
+2021/06/04-21:33:45.922 5 Level-0 table #5: 72318 bytes OK
+2021/06/04-21:33:45.927 5 Delete type=0 #3
