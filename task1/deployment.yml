@@ -2,7 +2,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: task1
   labels:
     io.kompose.service: task1
   name: task1
@@ -66,7 +65,6 @@ metadata:
   labels:
     io.kompose.service: task1
   name: task1-service
-  namespace: task1
 spec:
   ports:
     - name: "8000"
